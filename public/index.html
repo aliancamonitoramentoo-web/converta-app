@@ -510,10 +510,14 @@ async function analyzeMsg() {
         profile: { size: "", ticket: "", model: "B2C", challenges: c.tags.join(", ") }
       })
     });
+    if (!res.ok) { throw new Error("Servidor retornou erro " + res.status); }
     const data = await res.json();
-    let raw = data.texto || data.text || "{}";
+    if (data.error) throw new Error(data.error);
+    let raw = data.texto || data.text || "";
+    if (!raw) throw new Error("Resposta vazia da IA");
     const clean = raw.replace(/```json/g,"").replace(/```/g,"").trim();
-    const json = JSON.parse(clean.startsWith("{") ? clean : (clean.match(/\{[\s\S]*\}/) || ["{}"])[0]);
+    const jsonStr = clean.startsWith("{") ? clean : (clean.match(/\{[\s\S]*?\}/) || ["{}"])[0];
+    const json = JSON.parse(jsonStr);
 
     // Renderiza respostas
     const colors = ["#FF6B35","#FF6B35","#4CC9F0"];
