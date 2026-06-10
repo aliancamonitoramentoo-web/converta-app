@@ -483,7 +483,8 @@ function saveMsg() {
 // ── ANÁLISE IA ─────────────────────────────────────────────────────────────
 async function analyzeMsg() {
   const msg = document.getElementById("msg-input").value.trim();
-  if (!msg || !currentClientId) return;
+  if (!msg) { showToast("⚠️ Cole uma mensagem do cliente primeiro!"); return; }
+  if (!currentClientId) { showToast("⚠️ Selecione um cliente primeiro!"); return; }
   const ud = getUserData();
   const c = ud.clients.find(x => x.id === currentClientId);
   const btn = document.getElementById("btn-analyze");
@@ -561,8 +562,10 @@ async function analyzeMsg() {
     selectClient(currentClientId);
     showPTab("respostas");
   } catch(e) {
-    console.error(e);
-    document.getElementById("responses-wrap").innerHTML = '<div class="empty"><div>Erro ao analisar. Tente novamente.</div></div>';
+    console.error("Erro analyzeMsg:", e);
+    document.getElementById("responses-wrap").innerHTML = '<div class="empty"><div>Erro: ' + e.message + '</div></div>';
+    showToast("❌ Erro: " + e.message);
+    showPTab("respostas");
   }
   btn.disabled = false;
   btn.innerHTML = "🧠 Analisar com histórico →";
