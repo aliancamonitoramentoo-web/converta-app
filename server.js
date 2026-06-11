@@ -34,7 +34,14 @@ async function notifyWhatsApp(msg) {
 // ── LEAD ──────────────────────────────────────────────────────────────────
 app.post("/api/lead", async (req, res) => {
   const { name, empresa, phone, email } = req.body;
-  notifyWhatsApp(`🆕 Novo usuário Converta!\n👤 Nome: ${name}\n🏢 Empresa: ${empresa||"?"}\n📱 WhatsApp: ${phone||"?"}\n📧 Email: ${email||"?"}`).catch(() => {});
+  console.log("Novo lead:", name, empresa, phone, email);
+  await notifyWhatsApp(`🆕 *Novo usuário Converta!*
+👤 Nome: ${name}
+🏢 Empresa: ${empresa||"?"}
+📱 WhatsApp: ${phone||"?"}
+📧 Email: ${email||"?"}
+
+💰 Acesse: https://converta-app.onrender.com`).catch(e => console.error("WhatsApp lead erro:", e.message));
   res.json({ ok: true });
 });
 
@@ -44,29 +51,14 @@ app.post("/api/consult", async (req, res) => {
   const { messages, nicho, city, userName, empresa } = req.body;
   const firstName = (userName || "").split(" ")[0] || "vendedor";
 
-  const sys = `Você é um especialista em vendas pelo WhatsApp no mercado brasileiro. 
-Analise o histórico completo da conversa com o cliente e gere 3 respostas estratégicas diferentes.
-Trate o vendedor por: ${firstName}. Empresa: ${empresa || "?"}.
-
-Retorne APENAS JSON válido:
-{
-  "texto": "resposta principal resumida",
-  "r1": {"estrategia": "nome da estratégia", "texto": "resposta completa para colar no WhatsApp"},
-  "r2": {"estrategia": "nome da estratégia", "texto": "resposta completa para colar no WhatsApp"},
-  "r3": {"estrategia": "nome da estratégia", "texto": "resposta completa para colar no WhatsApp"},
-  "analise": "análise do cliente em 2-3 frases com probabilidade de fechar",
-  "score": "quente|morno|frio",
-  "tags": ["tag1", "tag2"]
-}
-
-Regras:
-- Respostas em português informal como WhatsApp real
-- Nunca repita argumentos já usados no histórico
-- Cada resposta com estratégia diferente
-- score baseado no comportamento do cliente`;
+  const sys = `Especialista em vendas WhatsApp Brasil. Vendedor: ${firstName}. Empresa: ${empresa||"?"}.
+Analise o histórico e gere 3 respostas curtas e diretas (máx 2 linhas cada).
+Retorne APENAS JSON:
+{"r1":{"estrategia":"nome","texto":"resposta"},"r2":{"estrategia":"nome","texto":"resposta"},"r3":{"estrategia":"nome","texto":"resposta"},"analise":"análise curta + % de fechar","score":"quente|morno|frio","tags":["tag1"]}
+Português informal, sem repetir argumentos já usados.`;
 
   try {
-    const data = await callAI(messages, sys, 1200);
+    const data = await callAI(messages, sys, 700);
     let raw = data.content?.map(b => b.text || "").join("") || "{}";
     const clean = raw.replace(/```json/g, "").replace(/```/g, "").trim();
     let parsed;
@@ -76,8 +68,11 @@ Regras:
       parsed = { texto: raw, r1: null, r2: null, r3: null, analise: "", score: "frio", tags: [] };
     }
 
-    const lastMsg = (messages[messages.length - 1]?.content || "").substring(0, 80);
-    notifyWhatsApp(`💬 ${firstName} (${empresa || nicho || "?"}) analisou: "${lastMsg}"`).catch(() => {});
+    const lastMsg = (messages[messages.length - 1]?.content || "").substring(0, 100);
+    console.log("Análise feita por:", firstName, empresa);
+    notifyWhatsApp(`💬 *${firstName}* (${empresa||"?"}) usou o Converta!
+📝 "${lastMsg}"
+🎯 Score: ${parsed?.score||"?"}`).catch(() => {});
 
     res.json({ ...parsed, searchUsed: false });
   } catch (err) {
