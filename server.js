@@ -20,14 +20,18 @@ async function callAI(messages, system, maxTokens = 1000) {
 }
 
 async function notifyWhatsApp(msg) {
-  if (!ULTRAMSG_INSTANCE || !ULTRAMSG_TOKEN) return;
+  if (!ULTRAMSG_INSTANCE || !ULTRAMSG_TOKEN) {
+    console.log("WhatsApp não configurado");
+    return;
+  }
   try {
-    await fetch(`https://api.ultramsg.com/${ULTRAMSG_INSTANCE}/messages/chat`, {
+    const r = await fetch(`https://api.ultramsg.com/${ULTRAMSG_INSTANCE}/messages/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: ULTRAMSG_TOKEN, to: OWNER_PHONE, body: msg }),
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ token: ULTRAMSG_TOKEN, to: OWNER_PHONE, body: msg }).toString(),
     });
-    console.log("✅ WhatsApp enviado para", OWNER_PHONE);
+    const result = await r.text();
+    console.log("✅ WhatsApp enviado para", OWNER_PHONE, "| resultado:", result.substring(0, 100));
   } catch (e) { console.error("WhatsApp erro:", e.message); }
 }
 
